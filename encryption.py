@@ -1,77 +1,89 @@
-# Function to encrypt the text
 def encrypt_text(text, n, m):
-    result = []  # List to hold the encrypted characters
-    for char in text:  # Loop through each character in the input text
-        if char.islower():  # Check if character is lowercase
-            if 'a' <= char <= 'm':  # If in first half of alphabet
-                # Shift forward by n * m and wrap around alphabet
-                new_char = chr(((ord(char) - ord('a') + n * m) % 26) + ord('a'))
-            else:  # If in second half of alphabet (n-z)
-                # Shift backward by n + m and wrap around alphabet
-                new_char = chr(((ord(char) - ord('a') - (n + m)) % 26) + ord('a'))
-            result.append(new_char)  # Add encrypted character to result
-        elif char.isupper():  # Check if character is uppercase
-            if 'A' <= char <= 'M':  # If in first half of uppercase alphabet
-                # Shift backward by n
-                new_char = chr(((ord(char) - ord('A') - n) % 26) + ord('A'))
-            else:  # If in second half of uppercase alphabet
-                # Shift forward by m squared
-                new_char = chr(((ord(char) - ord('A') + m**2) % 26) + ord('A'))
-            result.append(new_char)  # Add encrypted character to result
+    encrypted = []
+    for char in text:
+        if char.islower():
+            original = ord(char)
+            if 'a' <= char <= 'm':
+                # Shift forward within a-m (13 letters)
+                shift = (n * m) % 13  # Constrain shift to 0-12
+                new_pos = ord('a') + (original - ord('a') + shift) % 13
+            else:
+                # Shift backward within n-z (13 letters)
+                shift = (n + m) % 13
+                new_pos = ord('n') + (original - ord('n') - shift) % 13
+            encrypted.append(chr(new_pos))
+        elif char.isupper():
+            original = ord(char)
+            if 'A' <= char <= 'M':
+                # Shift backward within A-M (13 letters)
+                shift = n % 13
+                new_pos = ord('A') + (original - ord('A') - shift) % 13
+            else:
+                # Shift forward within N-Z (13 letters)
+                shift = (m ** 2) % 13
+                new_pos = ord('N') + (original - ord('N') + shift) % 13
+            encrypted.append(chr(new_pos))
         else:
-            result.append(char)  # Leave numbers and special characters unchanged
-    return ''.join(result)  # Return the encrypted string
+            encrypted.append(char)
+    return ''.join(encrypted)
 
-# Function to decrypt the text
 def decrypt_text(text, n, m):
-    result = []  # List to hold the decrypted characters
-    for char in text:  # Loop through each character in the input text
-        if char.islower():  # Check if character is lowercase
-            if 'a' <= char <= 'm':  # If originally in first half
-                # Reverse the forward shift
-                new_char = chr(((ord(char) - ord('a') - n * m) % 26) + ord('a'))
-            else:  # If originally in second half
-                # Reverse the backward shift
-                new_char = chr(((ord(char) - ord('a') + (n + m)) % 26) + ord('a'))
-            result.append(new_char)  # Add decrypted character to result
-        elif char.isupper():  # Check if character is uppercase
-            if 'A' <= char <= 'M':  # If originally in first half
-                # Reverse the backward shift
-                new_char = chr(((ord(char) - ord('A') + n) % 26) + ord('A'))
-            else:  # If originally in second half
-                # Reverse the forward shift
-                new_char = chr(((ord(char) - ord('A') - m**2) % 26) + ord('A'))
-            result.append(new_char)  # Add decrypted character to result
+    decrypted = []
+    for char in text:
+        if char.islower():
+            encrypted_pos = ord(char)
+            if 'a' <= char <= 'm':
+                # Reverse forward shift (a-m)
+                shift = (n * m) % 13
+                new_pos = ord('a') + (encrypted_pos - ord('a') - shift) % 13
+            else:
+                # Reverse backward shift (n-z)
+                shift = (n + m) % 13
+                new_pos = ord('n') + (encrypted_pos - ord('n') + shift) % 13
+            decrypted.append(chr(new_pos))
+        elif char.isupper():
+            encrypted_pos = ord(char)
+            if 'A' <= char <= 'M':
+                # Reverse backward shift (A-M)
+                shift = n % 13
+                new_pos = ord('A') + (encrypted_pos - ord('A') + shift) % 13
+            else:
+                # Reverse forward shift (N-Z)
+                shift = (m ** 2) % 13
+                new_pos = ord('N') + (encrypted_pos - ord('N') - shift) % 13
+            decrypted.append(chr(new_pos))
         else:
-            result.append(char)  # Leave numbers and special characters unchanged
-    return ''.join(result)  # Return the decrypted string
+            decrypted.append(char)
+    return ''.join(decrypted)
 
-# Function to check if decryption is successful
-def check_correctness(original_text, decrypted_text):
-    return original_text == decrypted_text  # Compare both strings
+def check_correctness(original, decrypted):
+    return original == decrypted
 
-# Main program execution
-if __name__ == "__main__":
-    # Get encryption inputs from user
-    n = int(input("Enter value for n: "))
-    m = int(input("Enter value for m: "))
+def main():
+    try:
+        with open('raw_text.txt', 'r') as file:
+            original_text = file.read()
+    except FileNotFoundError:
+        print("Error: raw_text.txt not found.")
+        return
 
-    # Read original text from raw_text.txt
-    with open("raw_text.txt", "r") as f:
-        original_text = f.read()
+    try:
+        n = int(input("Enter value for n (integer): "))
+        m = int(input("Enter value for m (integer): "))
+    except ValueError:
+        print("Error: n and m must be integers.")
+        return
 
-    # Encrypt the text
     encrypted_text = encrypt_text(original_text, n, m)
-
-    # Save encrypted text to file
-    with open("encrypted_text.txt", "w") as f:
-        f.write(encrypted_text)
-
-    # Decrypt the text
+    
+    with open('encrypted_text.txt', 'w') as file:
+        file.write(encrypted_text)
+    
     decrypted_text = decrypt_text(encrypted_text, n, m)
+    
+    is_correct = check_correctness(original_text, decrypted_text)
+    
+    print("\nDecryption correct:", is_correct)
 
-    # Check if decryption is correct and display result
-    if check_correctness(original_text, decrypted_text):
-        print("Decryption is correct.")
-    else:
-        print("Decryption failed.")
+if __name__ == "__main__":
+    main()
